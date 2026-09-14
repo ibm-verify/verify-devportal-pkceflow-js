@@ -22,6 +22,14 @@ RESPONSE_TYPE=code
 
 Following successful authentication, authenticated user information will be returned.
 
+## Security Notes
+
+**Why does a PKCE flow use a `CLIENT_SECRET`?**
+
+This is a Next.js server-side application — not a browser SPA or mobile app. The `CLIENT_SECRET` is used exclusively in server-side API routes (`/api/auth` and `/api/auth/authURL`) and is never sent to or accessible by the browser. This makes it a **confidential client** using PKCE as an additional security layer, which is a valid and secure pattern.
+
+PKCE without a client secret is intended for pure public clients (SPAs, native apps) where the secret cannot be kept confidential. In this app, the secret remains on the server at all times.
+
 ## CI Pipeline
 
 Every push to any branch automatically runs two sequential checks:
