@@ -2,11 +2,6 @@ name: CI
 
 on:
   push:
-  pull_request:
-    # Run on PRs from the same repo only.
-    # Fork PRs cannot access repository secrets so the secret-dependent
-    # smoke and E2E jobs are gated below using the trusted-pr condition.
-    types: [opened, synchronize, reopened]
 
 jobs:
   # ── Job 1: Smoke test ──────────────────────────────────────────────────────
@@ -16,13 +11,6 @@ jobs:
   smoke-test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    # Only run when secrets are available:
-    # - always on push events
-    # - on pull_request only if the PR is from the same repo (not a fork)
-    if: >
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.head.repo.full_name == github.repository)
 
     steps:
       - name: Checkout

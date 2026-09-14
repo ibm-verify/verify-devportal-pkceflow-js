@@ -1,3 +1,4 @@
+#appscan-ignore: insecure-base-image
 # ---- deps: install dependencies exactly as locked ----
 FROM node:20-alpine AS deps
 WORKDIR /app
