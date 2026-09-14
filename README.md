@@ -22,6 +22,54 @@ RESPONSE_TYPE=code
 
 Following successful authentication, authenticated user information will be returned.
 
+## Security Notes
+
+**Why does a PKCE flow use a `CLIENT_SECRET`?**
+
+This is a Next.js server-side application — not a browser SPA or mobile app. The `CLIENT_SECRET` is used exclusively in server-side API routes (`/api/auth` and `/api/auth/authURL`) and is never sent to or accessible by the browser. This makes it a **confidential client** using PKCE as an additional security layer, which is a valid and secure pattern.
+
+PKCE without a client secret is intended for pure public clients (SPAs, native apps) where the secret cannot be kept confidential. In this app, the secret remains on the server at all times.
+
+## CI Pipeline
+
+Every push to any branch automatically runs two sequential checks:
+
+| Job | What it does |
+|---|---|
+| **Smoke test** | Builds the Docker image, starts the container, and verifies the app responds on port 3000 |
+| **E2E test** | Runs only if the smoke test passes. Uses Playwright to execute the full PKCE auth flow against the IBM Verify dev tenant — login, verify all user claims are returned, logout |
+
+If the smoke test fails, the E2E job is skipped. If either job fails, the workflow is marked as failed on the branch/PR.
+
+### Running E2E tests locally
+
+1. Add the following to your `.env` file (in addition to the existing variables):
+```
+TEST_USERNAME=<ibm-verify-test-username>
+TEST_PASSWORD=<ibm-verify-test-password>
+```
+
+2. Build and start the app in Docker:
+```bash
+docker build -t dev-portal-pkce:ci . && \
+docker run -d --name pkce-e2e -p 3000:3000 --env-file .env dev-portal-pkce:ci
+```
+
+3. Run the Playwright tests:
+```bash
+APP_URL=http://localhost:3000 \
+TEST_USERNAME=<username> \
+TEST_PASSWORD=<password> \
+npx playwright test
+```
+
+4. Cleanup:
+```bash
+docker rm -f pkce-e2e
+```
+
+On failure(locally), an HTML report is generated — open it with `npx playwright show-report`.
+
 ## Troubleshooting
 - CLI displaying `npm ERR! code E401` when trying to run `npm install`. Delete the package-lock.json file and run `npm install` again.
 
