@@ -28,6 +28,16 @@ jobs:
       - name: Build Docker image
         run: docker build -t dev-portal-pkce:ci .
 
+      - name: Export Docker image
+        run: docker save dev-portal-pkce:ci | gzip > /tmp/dev-portal-pkce.tar.gz
+
+      - name: Upload Docker image artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp/dev-portal-pkce.tar.gz
+          retention-days: 1
+
       - name: Start container
         run: |
           docker run -d --name pkce-smoke -p 3000:3000 \
@@ -83,8 +93,14 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
 
-      - name: Build Docker image
-        run: docker build -t dev-portal-pkce:ci .
+      - name: Download Docker image artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: docker-image
+          path: /tmp
+
+      - name: Load Docker image
+        run: docker load < /tmp/dev-portal-pkce.tar.gz
 
       - name: Start container
         run: |

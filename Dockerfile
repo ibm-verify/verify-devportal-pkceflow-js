@@ -1,12 +1,13 @@
-#appscan-ignore: insecure-base-image
 # ---- deps: install dependencies exactly as locked ----
-FROM node:20-alpine AS deps
+FROM registry.access.redhat.com/ubi9/nodejs-20-minimal:1 AS deps
+USER 0
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
 # ---- builder: compile the Next.js app ----
-FROM node:20-alpine AS builder
+FROM registry.access.redhat.com/ubi9/nodejs-20-minimal:1 AS builder
+USER 0
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -14,20 +15,18 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # ---- runner: minimal image that serves the built app ----
-FROM node:20-alpine AS runner
+FROM registry.access.redhat.com/ubi9/nodejs-20-minimal:1 AS runner
+USER 0
 WORKDIR /app
+RUN chown -R 1001:1001 /app
+USER 1001
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
-
-USER nextjs
+COPY --from=builder --chown=1001:1001 /app/public ./public
+COPY --from=builder --chown=1001:1001 /app/.next ./.next
+COPY --from=builder --chown=1001:1001 /app/node_modules ./node_modules
+COPY --from=builder --chown=1001:1001 /app/package.json ./package.json
 
 EXPOSE 3000
 ENV PORT=3000
